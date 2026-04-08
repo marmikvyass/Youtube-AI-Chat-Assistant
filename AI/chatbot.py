@@ -9,16 +9,15 @@ from langchain_classic.vectorstores import FAISS
 from dotenv import load_dotenv
 from deep_translator import GoogleTranslator
 from youtube_transcript_api.proxies import ProxyConfig
+import os 
 
 load_dotenv()
 
 def ask_AI(video_id, question):
 
-    proxies=ProxyConfig(
-            http = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754",
-            https = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
-    )
-    api = YouTubeTranscriptApi(proxy_config=proxies)
+    os.environ['HTTP_PROXY'] = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
+    os.environ['HTTPS_PROXY'] = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
+    api = YouTubeTranscriptApi()
 
     try:
         multiple_languages = [
