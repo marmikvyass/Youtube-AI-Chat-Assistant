@@ -10,13 +10,19 @@ from dotenv import load_dotenv
 from deep_translator import GoogleTranslator
 from youtube_transcript_api.proxies import ProxyConfig
 import os 
+import requests
 
 load_dotenv()
 
 def ask_AI(video_id, question):
+    
+    proxy = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
+    session = requests.Session()
+    session.proxies = {
+        "http": proxy,
+        "https": proxy
+    }
 
-    os.environ['HTTP_PROXY'] = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
-    os.environ['HTTPS_PROXY'] = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
     api = YouTubeTranscriptApi()
 
     try:
