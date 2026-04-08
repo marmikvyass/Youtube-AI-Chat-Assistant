@@ -10,3 +10,4 @@ langchain-classic
 faiss-cpu
 deep-translator
 python-dotenv
+yt-dlp

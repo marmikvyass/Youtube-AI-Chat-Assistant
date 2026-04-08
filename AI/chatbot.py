@@ -8,46 +8,40 @@ from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnableP
 from langchain_classic.vectorstores import FAISS
 from dotenv import load_dotenv
 from deep_translator import GoogleTranslator
-
+import yt_dlp
+import requests
+import re
 load_dotenv()
 
 def ask_AI(video_id, question):
-    api = YouTubeTranscriptApi()
-    try:
-        multiple_languages = [
-            "en",  # English
-            "hi",  # Hindi
-            "es",  # Spanish
-            "fr",  # French
-            "de",  # German
-            "pt",  # Portuguese
-            "ru",  # Russian
-            "ar",  # Arabic
-            "ja",  # Japanese
-            "ko",  # Korean
-            "zh-Hans",  # Chinese simplified
-            "zh-Hant",  # Chinese traditional
-            "it",  # Italian
-            "nl",  # Dutch
-            "tr",  # Turkish
-            "pl",  # Polish
-            "id",  # Indonesian
-            "vi",  # Vietnamese
-            "th",  # Thai
-            "ta",  # Tamil
-            "te",  # Telugu
-            "bn",  # Bengali
-            "ur",  # Urdu
-            "mr",  # Marathi
-            "gu",  # Gujarati
-            "pa",  # Punjabi
-            "ml",  # Malayalam
-            "kn",  # Kannada
-        ]
-        transcript_list = api.fetch(video_id, languages=multiple_languages)
-        transcript = " ".join(chunk.text for chunk in transcript_list)
-    except TranscriptsDisabled:
+    def get_transcript(video_id):
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        ydl_opts = {
+            "skip_download": True,
+            "writesubtitles": True,
+            "writeautomaticsub": True,
+            "subtitlesformat": "vtt",
+            "quiet": True
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+        subtitles = info.get("subtitles") or info.get("automatic_captions")
+        if not subtitles:
+            return 'No transcript found'
+        
+        lang = list(subtitles.keys())[0]
+        subtitle_url = subtitles[lang][0]["url"]
+        
+        response = requests.get(subtitle_url)
+        return response.text
+        
+        
+    transcript = get_transcript(video_id)
+    if not transcript:
         return "No transcript available for this video"
+    transcript = re.sub(r'\d+:\d+:\d+\.\d+ --> .*', '', transcript)
+    transcript = re.sub(r'<.*?>', '', transcript)
+    transcript = transcript.replace('\n', ' ')
     
     splitter = RecursiveCharacterTextSplitter(
         chunk_size = 1000,
