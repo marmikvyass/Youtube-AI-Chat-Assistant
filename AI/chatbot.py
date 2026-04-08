@@ -8,32 +8,45 @@ from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnableP
 from langchain_classic.vectorstores import FAISS
 from dotenv import load_dotenv
 from deep_translator import GoogleTranslator
-import yt_dlp
 import requests
 import re
+import xml.etree.ElementTree as ET
+import html
 load_dotenv()
 
 def ask_AI(video_id, question):
     def get_transcript(video_id):
-        url = f"https://www.youtube.com/watch?v={video_id}"
-        ydl_opts = {
-            "skip_download": True,
-            "writesubtitles": True,
-            "writeautomaticsub": True,
-            "subtitlesformat": "vtt",
-            "quiet": True
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-        subtitles = info.get("subtitles") or info.get("automatic_captions")
-        if not subtitles:
-            return 'No transcript found'
+        list_url = f"https://video.google.com/timedtext?type=list&v={video_id}"
+        response = requests.get(list_url)
+
+        if not response.text:
+            return None
+
+        root = ET.fromstring(response.text)
+
+        tracks = root.findall("track")
+        auto = [t for t in tracks if t.attrib.get("kind") == "asr"]
+        tracks = auto or tracks
+
+        if not tracks:
+            return None
+
+        # pick first available language
+        lang = tracks[0].attrib.get("lang_code")
+
+        # fetch transcript
+        transcript_url = f"https://video.google.com/timedtext?lang={lang}&v={video_id}"
+        response = requests.get(transcript_url)
+
+        root = ET.fromstring(response.text)
+
+        transcript = " ".join(
+            elem.text for elem in root.findall(".//text") if elem.text
+        )
         
-        lang = list(subtitles.keys())[0]
-        subtitle_url = subtitles[lang][0]["url"]
-        
-        response = requests.get(subtitle_url)
-        return response.text
+        transcript = html.unescape(transcript)
+
+        return transcript
         
         
     transcript = get_transcript(video_id)
