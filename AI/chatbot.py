@@ -15,10 +15,8 @@ load_dotenv()
 def ask_AI(video_id, question):
 
     proxies=ProxyConfig(
-        {
-            "http": "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754",
-            "https": "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
-        }
+            http = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754",
+            https = "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
     )
     api = YouTubeTranscriptApi(proxy_config=proxies)
 
