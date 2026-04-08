@@ -8,53 +8,55 @@ from langchain_core.runnables import RunnableLambda, RunnableParallel, RunnableP
 from langchain_classic.vectorstores import FAISS
 from dotenv import load_dotenv
 from deep_translator import GoogleTranslator
-import requests
-import re
-import xml.etree.ElementTree as ET
-import html
+from youtube_transcript_api.proxies import ProxyConfig
+
 load_dotenv()
 
 def ask_AI(video_id, question):
-    def get_transcript(video_id):
-        list_url = f"https://video.google.com/timedtext?type=list&v={video_id}"
-        response = requests.get(list_url)
 
-        if not response.text:
-            return None
+    proxies=ProxyConfig(
+        {
+            "http": "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754",
+            "https": "http://uazvriyg:k6m7nyzpvz6g@31.59.20.176:6754"
+        }
+    )
+    api = YouTubeTranscriptApi(proxy_config=proxies)
 
-        root = ET.fromstring(response.text)
-
-        tracks = root.findall("track")
-        auto = [t for t in tracks if t.attrib.get("kind") == "asr"]
-        tracks = auto or tracks
-
-        if not tracks:
-            return None
-
-        # pick first available language
-        lang = tracks[0].attrib.get("lang_code")
-
-        # fetch transcript
-        transcript_url = f"https://video.google.com/timedtext?lang={lang}&v={video_id}"
-        response = requests.get(transcript_url)
-
-        root = ET.fromstring(response.text)
-
-        transcript = " ".join(
-            elem.text for elem in root.findall(".//text") if elem.text
-        )
-        
-        transcript = html.unescape(transcript)
-
-        return transcript
-        
-        
-    transcript = get_transcript(video_id)
-    if not transcript:
+    try:
+        multiple_languages = [
+            "en",  # English
+            "hi",  # Hindi
+            "es",  # Spanish
+            "fr",  # French
+            "de",  # German
+            "pt",  # Portuguese
+            "ru",  # Russian
+            "ar",  # Arabic
+            "ja",  # Japanese
+            "ko",  # Korean
+            "zh-Hans",  # Chinese simplified
+            "zh-Hant",  # Chinese traditional
+            "it",  # Italian
+            "nl",  # Dutch
+            "tr",  # Turkish
+            "pl",  # Polish
+            "id",  # Indonesian
+            "vi",  # Vietnamese
+            "th",  # Thai
+            "ta",  # Tamil
+            "te",  # Telugu
+            "bn",  # Bengali
+            "ur",  # Urdu
+            "mr",  # Marathi
+            "gu",  # Gujarati
+            "pa",  # Punjabi
+            "ml",  # Malayalam
+            "kn",  # Kannada
+        ]
+        transcript_list = api.fetch(video_id, languages=multiple_languages)
+        transcript = " ".join(chunk.text for chunk in transcript_list)
+    except TranscriptsDisabled:
         return "No transcript available for this video"
-    transcript = re.sub(r'\d+:\d+:\d+\.\d+ --> .*', '', transcript)
-    transcript = re.sub(r'<.*?>', '', transcript)
-    transcript = transcript.replace('\n', ' ')
     
     splitter = RecursiveCharacterTextSplitter(
         chunk_size = 1000,
